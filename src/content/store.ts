@@ -173,14 +173,13 @@ export async function testConnection(cfg: GhConfig): Promise<{ ok: boolean; mess
   }
 }
 
-/** 把一个文件写入仓库指定分支（存在则更新，不存在则创建）。text 会按 UTF-8 转 base64 */
+/** 把一个文件写入仓库指定分支（存在则更新，不存在则创建）。base64 为文件内容的 base64 编码 */
 async function putFileInternal(
   cfg: GhConfig,
   branch: string,
   path: string,
   message: string,
-  base64: string,
-  isText: boolean
+  base64: string
 ): Promise<void> {
   const api = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path.replace(/^\/+/, '')}`;
   const headers = ghHeaders(cfg);
@@ -212,12 +211,12 @@ async function putFileInternal(
 }
 
 function putFile(cfg: GhConfig, branch: string, path: string, message: string, text: string): Promise<void> {
-  return putFileInternal(cfg, branch, path, message, b64encode(text), true);
+  return putFileInternal(cfg, branch, path, message, b64encode(text));
 }
 
 /** 上传二进制（图片）文件，base64 为文件原始内容的 base64 编码 */
 function putFileBase64(cfg: GhConfig, branch: string, path: string, message: string, base64: string): Promise<void> {
-  return putFileInternal(cfg, branch, path, message, base64, false);
+  return putFileInternal(cfg, branch, path, message, base64);
 }
 
 /** 批量上传作品配图：同时写入 main（public/art/）与 gh-pages（art/） */
@@ -230,7 +229,6 @@ export async function uploadArtFiles(
   }
   try {
     for (const f of files) {
-      const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
       await putFileBase64(cfg, cfg.branch, `public/art/${f.name}`, `content: 上传作品配图 ${f.name}`, f.base64);
       await putFileBase64(cfg, 'gh-pages', `art/${f.name}`, `content: 发布作品配图 ${f.name}`, f.base64);
     }
