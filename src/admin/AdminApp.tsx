@@ -24,6 +24,8 @@ import {
   publishContent,
   saveGhConfig,
   saveLocal,
+  testConnection,
+  uploadArtFiles,
   type GhConfig,
 } from '../content/store';
 
@@ -233,14 +235,22 @@ function JourneyEditor({ group, onChange }: { group: JourneyGroup; onChange: (it
 
 /* ---------------- Program 编辑器 ---------------- */
 
-function ProgramsEditor({ programs, onChange }: { programs: Program[]; onChange: (p: Program[]) => void }) {
+function ProgramsEditor({
+  programs,
+  onChange,
+  onArtFile,
+}: {
+  programs: Program[];
+  onChange: (p: Program[]) => void;
+  onArtFile: (index: number, file: File) => void;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <p className="rounded-xl border border-[#C9A24B]/20 bg-[#15110A] p-3 text-xs leading-relaxed text-[#EFE9DC]/55">
-        配图路径可填：<code className="text-[#E8CD8A]">art/bifrost.svg</code>、
+        配图支持两种方式：<strong className="text-[#E8CD8A]">本地上传图片</strong>（点「上传图片」选择文件，随「发布到网站」自动上传到仓库生效），
+        或手动填写路径（<code className="text-[#E8CD8A]">art/bifrost.svg</code>、
         <code className="text-[#E8CD8A]">art/shopfront.svg</code>、
-        <code className="text-[#E8CD8A]">art/inspireplanet.svg</code>
-        ，留空则显示占位图；也可以放任意图片网址。
+        <code className="text-[#E8CD8A]">art/inspireplanet.svg</code> 或任意图片网址）。留空则显示占位图。
       </p>
       {programs.map((p, i) => (
         <CardShell
@@ -268,8 +278,36 @@ function ProgramsEditor({ programs, onChange }: { programs: Program[]; onChange:
             <Field label="简介">
               <AreaInput value={p.desc} onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, desc: v } : x)))} />
             </Field>
-            <Field label="配图路径">
-              <TextInput value={p.art ?? ''} placeholder="/art/bifrost.svg 或图片网址" onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, art: v || undefined } : x)))} />
+            <Field label="配图（本地图片会随「发布到网站」自动上传）">
+              <div className="flex flex-wrap items-center gap-3">
+                {p.art ? (
+                  <img src={p.art} alt="配图预览" className="h-14 w-24 rounded-lg border border-[#C9A24B]/30 object-cover" />
+                ) : (
+                  <div className="flex h-14 w-24 items-center justify-center rounded-lg border border-dashed border-[#C9A24B]/30 text-[10px] text-[#EFE9DC]/40">
+                    无配图
+                  </div>
+                )}
+                <label className="cursor-pointer rounded-full border border-[#C9A24B]/40 px-4 py-1.5 text-xs font-medium text-[#EFE9DC] transition-colors hover:border-[#C9A24B] hover:text-[#E8CD8A]">
+                  本地上传图片
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) onArtFile(i, f);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <div className="min-w-[180px] flex-1">
+                  <TextInput
+                    value={p.art && !p.art.startsWith('data:') ? p.art : ''}
+                    placeholder={p.art?.startsWith('data:') ? '已选本地图，发布后自动填入路径' : 'art/bifrost.svg 或图片网址'}
+                    onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, art: v || undefined } : x)))}
+                  />
+                </div>
+              </div>
             </Field>
           </div>
         </CardShell>
@@ -290,8 +328,12 @@ export default function AdminApp() {
   const [tab, setTab] = useState<TabKey>('knowledge');
   const [status, setStatus] = useState('加载中…');
   const [fromLocal, setFromLocal] = useState(false);
-  const [gh, setGh] = useState<GhConfig>(() => loadGhConfig() ?? { owner: '', repo: '', branch: 'main', path: 'public/content.json', token: '' });
+  const [pendingUploads, setPendingUploads] = useState<{ name: string; dataUrl: string; base64: string }[]>([]);
+  const [gh, setGh] = useState<GhConfig>(() =>
+    loadGhConfig() ?? { owner: 'kekeyee1103-ui', repo: 'claire-portfolio', branch: 'main', path: 'public/content.json', token: '' }
+  );
   const [ghBusy, setGhBusy] = useState(false);
+  const [ghTesting, setGhTesting] = useState(false);
   const [ghResult, setGhResult] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -328,9 +370,13 @@ export default function AdminApp() {
   };
 
   const doSave = () => {
-    saveLocal(content);
-    setFromLocal(true);
-    setStatus('已保存到本机：在这个浏览器里打开主页即可看到最新效果');
+    try {
+      saveLocal(content);
+      setFromLocal(true);
+      setStatus('已保存到本机：在这个浏览器里打开主页即可看到最新效果');
+    } catch {
+      setStatus('本机保存失败：内容过大（可能含新上传的图片）。可直接「发布到网站」，不影响上线');
+    }
   };
 
   const doClearLocal = async () => {
@@ -353,17 +399,77 @@ export default function AdminApp() {
     e.target.value = '';
   };
 
+  const handleArtFile = async (pi: number, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setStatus('❌ 请选择图片文件（jpg / png / webp / svg）');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setStatus('❌ 图片超过 8MB，请压缩后再上传');
+      return;
+    }
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error('读取文件失败'));
+        reader.readAsDataURL(file);
+      });
+      const extRaw = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const name = `program-${Date.now()}.${extRaw || 'png'}`;
+      const base64 = dataUrl.split(',')[1] ?? '';
+      setPendingUploads((u) => [...u, { name, dataUrl, base64 }]);
+      mutate((c) => {
+        c.programs[pi].art = dataUrl;
+      });
+      setStatus(`图片已就绪（${name}），点击「发布到网站」后上传生效`);
+    } catch {
+      setStatus('❌ 图片读取失败，请重试');
+    }
+  };
+
+  const doTest = async () => {
+    setGhTesting(true);
+    setGhResult('');
+    saveGhConfig(gh);
+    const r = await testConnection(gh);
+    setGhTesting(false);
+    setGhResult(r.message);
+  };
+
   const doPublish = async () => {
     setGhBusy(true);
     setGhResult('');
     saveGhConfig(gh);
-    const res = await publishContent(gh, content);
+    let working = content;
+    if (pendingUploads.length > 0) {
+      const up = await uploadArtFiles(gh, pendingUploads);
+      if (!up.ok) {
+        setGhBusy(false);
+        setGhResult(`❌ 配图上传失败：${up.error}`);
+        return;
+      }
+      let text = JSON.stringify(working);
+      for (const u of pendingUploads) {
+        text = text.split(u.dataUrl).join(`art/${u.name}`);
+      }
+      working = normalize(JSON.parse(text));
+    }
+    const res = await publishContent(gh, working);
     setGhBusy(false);
-    setGhResult(
-      res.ok
-        ? '✅ 发布成功！内容已上线，访客刷新页面即可看到（本站部署分支即时生效，无需等待）。'
-        : `❌ ${res.error}`
-    );
+    if (res.ok) {
+      setContent(working);
+      try {
+        saveLocal(working);
+        setFromLocal(true);
+      } catch {
+        /* 本机存储配额不足不影响发布 */
+      }
+      setPendingUploads([]);
+      setGhResult('✅ 发布成功！图片与内容已上线，访客刷新页面即可看到。');
+    } else {
+      setGhResult(`❌ ${res.error}`);
+    }
   };
 
   const doPullRepo = async () => {
@@ -447,6 +553,9 @@ export default function AdminApp() {
             </Field>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Btn onClick={doTest} tone="ghost" disabled={ghTesting}>
+              {ghTesting ? '测试中…' : '测试连接'}
+            </Btn>
             <Btn onClick={doPublish} tone="gold" disabled={ghBusy}>
               <Eye size={14} /> {ghBusy ? '发布中…' : '发布到网站'}
             </Btn>
@@ -493,7 +602,11 @@ export default function AdminApp() {
               <KnowledgeEditor posts={content.knowledge} onChange={(p) => mutate((c) => { c.knowledge = p; })} />
             )}
             {tab === 'programs' && (
-              <ProgramsEditor programs={content.programs} onChange={(p) => mutate((c) => { c.programs = p; })} />
+              <ProgramsEditor
+                programs={content.programs}
+                onChange={(p) => mutate((c) => { c.programs = p; })}
+                onArtFile={handleArtFile}
+              />
             )}
             {tab.startsWith('j-') && (() => {
               const gi = Number(tab.slice(2));

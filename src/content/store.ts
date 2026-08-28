@@ -143,13 +143,44 @@ export async function fetchRepoContent(cfg: GhConfig): Promise<SiteContent | nul
   }
 }
 
-/** 把一个文件写入仓库指定分支（存在则更新，不存在则创建） */
-async function putFile(
+/** 检查仓库信息与 Token 是否可用（用于后台「测试连接」） */
+export async function testConnection(cfg: GhConfig): Promise<{ ok: boolean; message: string }> {
+  if (!cfg.owner || !cfg.repo || !cfg.token) {
+    return { ok: false, message: '请先填写用户名、仓库名和 Token' };
+  }
+  try {
+    const res = await fetch(`https://api.github.com/repos/${cfg.owner}/${cfg.repo}`, {
+      headers: ghHeaders(cfg),
+    });
+    if (res.status === 200) {
+      const j = await res.json();
+      if (j?.permissions && j.permissions.push === false) {
+        return { ok: false, message: '❌ Token 有效但对该仓库没有写权限：Fine-grained Token 请把 Contents 权限设为 Read and write 后重新生成' };
+      }
+      return { ok: true, message: `✅ 连接成功：${j?.full_name ?? `${cfg.owner}/${cfg.repo}`}` };
+    }
+    if (res.status === 401) return { ok: false, message: '❌ Token 无效或已过期，请重新生成' };
+    if (res.status === 404) {
+      return {
+        ok: false,
+        message:
+          '❌ 仓库不存在或 Token 无权访问：请检查用户名 / 仓库名；Fine-grained Token 需要在「Repository access」里选中本仓库，并在 Permissions 里给 Contents 读写权限',
+      };
+    }
+    return { ok: false, message: `❌ 连接失败（HTTP ${res.status}）` };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : '网络错误' };
+  }
+}
+
+/** 把一个文件写入仓库指定分支（存在则更新，不存在则创建）。text 会按 UTF-8 转 base64 */
+async function putFileInternal(
   cfg: GhConfig,
   branch: string,
   path: string,
   message: string,
-  text: string
+  base64: string,
+  isText: boolean
 ): Promise<void> {
   const api = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path.replace(/^\/+/, '')}`;
   const headers = ghHeaders(cfg);
@@ -160,7 +191,7 @@ async function putFile(
   } else if (get.status !== 404) {
     throw new Error(`读取 ${branch}:${path} 失败（HTTP ${get.status}）`);
   }
-  const body: Record<string, unknown> = { message, content: b64encode(text), branch };
+  const body: Record<string, unknown> = { message, content: base64, branch };
   if (sha) body.sha = sha;
   const put = await fetch(api, {
     method: 'PUT',
@@ -169,7 +200,43 @@ async function putFile(
   });
   if (put.status !== 200 && put.status !== 201) {
     const j = await put.json().catch(() => null);
-    throw new Error(`写入 ${branch}:${path} 失败（HTTP ${put.status}）${j?.message ? `：${j.message}` : ''}`);
+    let hint = '';
+    if (put.status === 404 || put.status === 403) {
+      hint =
+        '。常见原因：Token 只有读取权限 —— Fine-grained Token 请把 Contents 权限设为「Read and write」后重新生成；或改用勾选了 repo 的 Classic Token';
+    }
+    throw new Error(
+      `写入 ${branch}:${path} 失败（HTTP ${put.status}）${j?.message ? `：${j.message}` : ''}${hint}`
+    );
+  }
+}
+
+function putFile(cfg: GhConfig, branch: string, path: string, message: string, text: string): Promise<void> {
+  return putFileInternal(cfg, branch, path, message, b64encode(text), true);
+}
+
+/** 上传二进制（图片）文件，base64 为文件原始内容的 base64 编码 */
+function putFileBase64(cfg: GhConfig, branch: string, path: string, message: string, base64: string): Promise<void> {
+  return putFileInternal(cfg, branch, path, message, base64, false);
+}
+
+/** 批量上传作品配图：同时写入 main（public/art/）与 gh-pages（art/） */
+export async function uploadArtFiles(
+  cfg: GhConfig,
+  files: { name: string; base64: string }[]
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!cfg.owner || !cfg.repo || !cfg.token) {
+    return { ok: false, error: '请先填写 GitHub 仓库信息和 Token' };
+  }
+  try {
+    for (const f of files) {
+      const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      await putFileBase64(cfg, cfg.branch, `public/art/${f.name}`, `content: 上传作品配图 ${f.name}`, f.base64);
+      await putFileBase64(cfg, 'gh-pages', `art/${f.name}`, `content: 发布作品配图 ${f.name}`, f.base64);
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : '网络错误' };
   }
 }
 
