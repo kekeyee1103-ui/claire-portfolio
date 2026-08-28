@@ -34,4 +34,13 @@ npm run preview    # 预览构建产物（http://localhost:4173）
 
 ## 部署
 
-GitHub Actions 自动部署：推送到 `main` 分支即构建并发布到 GitHub Pages（`.github/workflows/deploy.yml`）。首次启用：仓库 Settings → Pages → Source 选 **GitHub Actions**。
+GitHub Pages，部署分支为 `gh-pages`（网站根目录即构建产物，含 `content.json`）：
+
+```bash
+npm run build
+cd dist && git init -b gh-pages && git add -A && git commit -m "deploy"
+git remote add origin https://github.com/kekeyee1103-ui/claire-portfolio.git
+git push -f origin gh-pages:gh-pages
+```
+
+内容更新无需重新构建：在 `/admin.html` 后台点「发布到网站」，会同时把 `content.json` 提交到 `main`（存档）与 `gh-pages`（即时上线）。

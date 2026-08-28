@@ -143,7 +143,41 @@ export async function fetchRepoContent(cfg: GhConfig): Promise<SiteContent | nul
   }
 }
 
-/** 把内容发布到 GitHub 仓库（触发线上自动重新部署，访客 1-2 分钟内可见） */
+/** 把一个文件写入仓库指定分支（存在则更新，不存在则创建） */
+async function putFile(
+  cfg: GhConfig,
+  branch: string,
+  path: string,
+  message: string,
+  text: string
+): Promise<void> {
+  const api = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path.replace(/^\/+/, '')}`;
+  const headers = ghHeaders(cfg);
+  let sha: string | undefined;
+  const get = await fetch(`${api}?ref=${encodeURIComponent(branch)}`, { headers });
+  if (get.status === 200) {
+    sha = (await get.json())?.sha;
+  } else if (get.status !== 404) {
+    throw new Error(`读取 ${branch}:${path} 失败（HTTP ${get.status}）`);
+  }
+  const body: Record<string, unknown> = { message, content: b64encode(text), branch };
+  if (sha) body.sha = sha;
+  const put = await fetch(api, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (put.status !== 200 && put.status !== 201) {
+    const j = await put.json().catch(() => null);
+    throw new Error(`写入 ${branch}:${path} 失败（HTTP ${put.status}）${j?.message ? `：${j.message}` : ''}`);
+  }
+}
+
+/**
+ * 发布内容：
+ * 1. 提交到 main 分支 public/content.json（源文件存档）
+ * 2. 提交到 gh-pages 分支 content.json（部署分支，访客即时可见）
+ */
 export async function publishContent(
   cfg: GhConfig,
   content: SiteContent
@@ -151,29 +185,20 @@ export async function publishContent(
   if (!cfg.owner || !cfg.repo || !cfg.token) {
     return { ok: false, error: '请先填写 GitHub 仓库信息和 Token' };
   }
-  const headers = ghHeaders(cfg);
+  const text = JSON.stringify(content, null, 2);
+  const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
   try {
-    let sha: string | undefined;
-    const get = await fetch(`${ghApi(cfg)}?ref=${encodeURIComponent(cfg.branch)}`, { headers });
-    if (get.status === 200) {
-      sha = (await get.json())?.sha;
-    } else if (get.status !== 404) {
-      return { ok: false, error: `读取远端文件失败（HTTP ${get.status}），请检查仓库 / 分支 / 路径 / Token 权限` };
+    await putFile(cfg, cfg.branch, cfg.path, `content: 更新网站内容 ${stamp}`, text);
+    try {
+      await putFile(cfg, 'gh-pages', 'content.json', `content: 发布网站内容 ${stamp}`, text);
+    } catch (e) {
+      // 部署分支写入失败不影响存档；提示用户稍后重试发布
+      return {
+        ok: false,
+        error: `内容已存档到 ${cfg.branch} 分支，但发布到 gh-pages 失败：${e instanceof Error ? e.message : '未知错误'}`,
+      };
     }
-    const body: Record<string, unknown> = {
-      message: `content: 更新网站内容 ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`,
-      content: b64encode(JSON.stringify(content, null, 2)),
-      branch: cfg.branch,
-    };
-    if (sha) body.sha = sha;
-    const put = await fetch(ghApi(cfg), {
-      method: 'PUT',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (put.status === 200 || put.status === 201) return { ok: true };
-    const j = await put.json().catch(() => null);
-    return { ok: false, error: `写入失败（HTTP ${put.status}）${j?.message ? `：${j.message}` : ''}` };
+    return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : '网络错误' };
   }

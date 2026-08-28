@@ -361,7 +361,7 @@ export default function AdminApp() {
     setGhBusy(false);
     setGhResult(
       res.ok
-        ? '✅ 发布成功！已提交到 GitHub，线上网站将在 1-2 分钟内自动更新。'
+        ? '✅ 发布成功！内容已上线，访客刷新页面即可看到（本站部署分支即时生效，无需等待）。'
         : `❌ ${res.error}`
     );
   };
@@ -421,9 +421,11 @@ export default function AdminApp() {
             <Github size={16} className="text-[#C9A24B]" /> 发布到网站（GitHub 互通）
           </h2>
           <p className="mt-2 text-xs leading-relaxed text-[#EFE9DC]/55">
-            填写一次仓库信息与 Token（只保存在你自己的浏览器里）。点「发布到网站」会把当前内容写入仓库里的
-            <code className="text-[#E8CD8A]"> {gh.path || 'public/content.json'} </code>
-            ，线上网站自动重新部署，1-2 分钟内所有访客可见。
+            填写一次仓库信息与 Token（只保存在你自己的浏览器里）。点「发布到网站」会把内容写入仓库的
+            <code className="text-[#E8CD8A]"> public/content.json </code>
+            存档，并同步到
+            <code className="text-[#E8CD8A]"> gh-pages </code>
+            部署分支——线上网站<strong className="text-[#E8CD8A]">立即更新</strong>，访客刷新即可看到。
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Field label="GitHub 用户名 / 组织">
@@ -459,10 +461,10 @@ export default function AdminApp() {
           <details className="mt-4 text-xs leading-relaxed text-[#EFE9DC]/55">
             <summary className="cursor-pointer text-[#C9A24B]">首次使用？查看一次性部署步骤 →</summary>
             <ol className="mt-3 list-decimal space-y-2 pl-5">
-              <li>把本项目上传到 GitHub 仓库（可以把整个文件夹交给我帮你推送）。</li>
-              <li>在 Vercel 导入该仓库（或开启 GitHub Pages），得到对外网址；之后每次仓库更新都会自动重新部署。</li>
-              <li>GitHub → Settings → Developer settings → Fine-grained tokens：生成一个只授权该仓库「Contents: Read and write」的 Token。</li>
-              <li>回到本页填写并保存仓库信息与 Token。以后编辑完点「发布到网站」即可，无需再碰代码。</li>
+              <li>把本项目上传到 GitHub 仓库（已完成：kekeyee1103-ui/claire-portfolio）。</li>
+              <li>网站通过 gh-pages 分支发布到 GitHub Pages（已配置好）。</li>
+              <li>GitHub → Settings → Developer settings → Fine-grained tokens：生成一个只授权该仓库「Contents: Read and write」的 Token（无需 workflow 权限）。</li>
+              <li>回到本页填写并保存仓库信息与 Token。以后编辑完点「发布到网站」即可，内容即时上线，无需再碰代码。</li>
             </ol>
           </details>
         </section>
