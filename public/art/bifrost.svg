@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#181309"/>
+      <stop offset="1" stop-color="#0D0B07"/>
+    </linearGradient>
+    <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C9A24B" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#C9A24B" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="halo" cx=".5" cy=".42" r=".62">
+      <stop offset="0" stop-color="#C9A24B" stop-opacity=".20"/>
+      <stop offset="1" stop-color="#C9A24B" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#bg)"/>
+  <g stroke="#C9A24B" stroke-opacity=".07">
+    <path d="M100 0V750M200 0V750M300 0V750M400 0V750M500 0V750M600 0V750M700 0V750M800 0V750M900 0V750M1000 0V750M1100 0V750"/>
+    <path d="M0 100H1200M0 200H1200M0 300H1200M0 400H1200M0 500H1200M0 600H1200"/>
+  </g>
+  <circle cx="600" cy="320" r="310" fill="url(#halo)"/>
+  <path d="M140 470 Q600 130 1060 470" fill="none" stroke="#E8CD8A" stroke-width="5" stroke-linecap="round"/>
+  <g stroke="#C9A24B" stroke-opacity=".75" stroke-width="2">
+    <path d="M232 409V470M324 361V470M416 327V470M508 307V470M600 300V470M692 307V470M784 327V470M876 361V470M968 409V470"/>
+  </g>
+  <path d="M140 470H1060" stroke="#C9A24B" stroke-width="3"/>
+  <circle cx="600" cy="300" r="9" fill="#E8CD8A"/>
+  <circle cx="600" cy="300" r="18" fill="none" stroke="#E8CD8A" stroke-opacity=".4"/>
+  <path d="M140 636L280 598L420 614L560 558L700 574L840 518L980 534L1060 498" fill="none" stroke="#E8CD8A" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M140 636L280 598L420 614L560 558L700 574L840 518L980 534L1060 498V690H140Z" fill="url(#area)" opacity=".4"/>
+  <g fill="#C9A24B">
+    <circle cx="280" cy="598" r="6"/><circle cx="420" cy="614" r="6"/><circle cx="560" cy="558" r="6"/><circle cx="700" cy="574" r="6"/><circle cx="980" cy="534" r="6"/>
+  </g>
+  <rect x="827" y="505" width="26" height="26" rx="5" transform="rotate(45 840 518)" fill="#E8CD8A"/>
+  <text x="600" y="722" text-anchor="middle" fill="#C9A24B" fill-opacity=".85" font-family="Georgia, 'Times New Roman', serif" font-size="25" letter-spacing="10">BIFROST · RISK → DECISION</text>
+</svg>

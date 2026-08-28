@@ -1,0 +1,516 @@
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Download,
+  ExternalLink,
+  Eye,
+  Github,
+  Plus,
+  RotateCcw,
+  Save,
+  Trash2,
+  Upload,
+} from 'lucide-react';
+import type { Bullet, JourneyItem, JourneyGroup, KnowledgePost, Program, SiteContent } from '../content/types';
+import {
+  clearLocal,
+  downloadContent,
+  fetchPublished,
+  fetchRepoContent,
+  loadGhConfig,
+  loadLocal,
+  normalize,
+  publishContent,
+  saveGhConfig,
+  saveLocal,
+  type GhConfig,
+} from '../content/store';
+
+/* ---------------- 基础控件 ---------------- */
+
+const inputCls =
+  'w-full rounded-lg border border-[#C9A24B]/30 bg-[#15110A] px-3 py-2 text-sm text-[#EFE9DC] outline-none transition-colors focus:border-[#C9A24B]';
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium tracking-[0.15em] text-[#C9A24B]">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function TextInput(props: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <input
+      className={inputCls}
+      value={props.value}
+      placeholder={props.placeholder}
+      onChange={(e) => props.onChange(e.target.value)}
+    />
+  );
+}
+
+function AreaInput(props: { value: string; onChange: (v: string) => void; rows?: number }) {
+  return (
+    <textarea
+      className={`${inputCls} resize-y leading-relaxed`}
+      rows={props.rows ?? 3}
+      value={props.value}
+      onChange={(e) => props.onChange(e.target.value)}
+    />
+  );
+}
+
+function Btn(props: {
+  children: ReactNode;
+  onClick?: () => void;
+  tone?: 'gold' | 'ghost' | 'danger';
+  disabled?: boolean;
+}) {
+  const tones = {
+    gold: 'border-[#C9A24B] bg-[#C9A24B] text-[#0C0C0C] hover:bg-[#D9BC6B]',
+    ghost: 'border-[#C9A24B]/40 text-[#EFE9DC] hover:border-[#C9A24B] hover:text-[#E8CD8A]',
+    danger: 'border-red-400/40 text-red-300/90 hover:border-red-400 hover:text-red-300',
+  } as const;
+  return (
+    <button
+      type="button"
+      disabled={props.disabled}
+      onClick={props.onClick}
+      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium tracking-wider transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${tones[props.tone ?? 'ghost']}`}
+    >
+      {props.children}
+    </button>
+  );
+}
+
+function CardShell(props: {
+  title: string;
+  onUp?: () => void;
+  onDown?: () => void;
+  onDelete?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#C9A24B]/20 bg-[#0F0D09] p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h4 className="text-sm font-medium tracking-wider text-[#EFE9DC]">{props.title}</h4>
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={props.onUp} className="rounded-md p-1.5 text-[#EFE9DC]/50 transition-colors hover:bg-[#C9A24B]/10 hover:text-[#C9A24B]" title="上移">
+            <ChevronUp size={16} />
+          </button>
+          <button type="button" onClick={props.onDown} className="rounded-md p-1.5 text-[#EFE9DC]/50 transition-colors hover:bg-[#C9A24B]/10 hover:text-[#C9A24B]" title="下移">
+            <ChevronDown size={16} />
+          </button>
+          <button type="button" onClick={props.onDelete} className="rounded-md p-1.5 text-[#EFE9DC]/50 transition-colors hover:bg-red-400/10 hover:text-red-300" title="删除">
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </div>
+      {props.children}
+    </div>
+  );
+}
+
+function move<T>(arr: T[], from: number, to: number): T[] {
+  const next = [...arr];
+  const clamped = Math.max(0, Math.min(next.length - 1, to));
+  const [x] = next.splice(from, 1);
+  next.splice(clamped, 0, x);
+  return next;
+}
+
+/* ---------------- 知识库编辑器 ---------------- */
+
+function KnowledgeEditor({ posts, onChange }: { posts: KnowledgePost[]; onChange: (p: KnowledgePost[]) => void }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {posts.map((post, i) => (
+        <CardShell
+          key={i}
+          title={`想法 ${i + 1}：${post.title || '（未命名）'}`}
+          onUp={() => onChange(move(posts, i, i - 1))}
+          onDown={() => onChange(move(posts, i, i + 1))}
+          onDelete={() => onChange(posts.filter((_, x) => x !== i))}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="时间（如 2026.08）">
+                <TextInput value={post.date} onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, date: v } : p)))} />
+              </Field>
+              <Field label="标签（如 行业思考）">
+                <TextInput value={post.tag} onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, tag: v } : p)))} />
+              </Field>
+            </div>
+            <Field label="标题">
+              <TextInput value={post.title} onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, title: v } : p)))} />
+            </Field>
+            <Field label="摘要">
+              <AreaInput value={post.excerpt} onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, excerpt: v } : p)))} />
+            </Field>
+            <Field label="全文链接（可选，填了会显示「Read More」）">
+              <TextInput value={post.link ?? ''} placeholder="https://…" onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, link: v || undefined } : p)))} />
+            </Field>
+          </div>
+        </CardShell>
+      ))}
+      <Btn onClick={() => onChange([{ date: '', tag: '', title: '', excerpt: '' }, ...posts])}>
+        <Plus size={14} /> 新增想法
+      </Btn>
+    </div>
+  );
+}
+
+/* ---------------- 简历经历编辑器 ---------------- */
+
+function BulletsEditor({ bullets, onChange }: { bullets: Bullet[]; onChange: (b: Bullet[]) => void }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="text-xs font-medium tracking-[0.15em] text-[#C9A24B]">描述条目</span>
+      {bullets.map((b, i) => (
+        <div key={i} className="flex flex-col gap-2 rounded-xl border border-[#C9A24B]/15 p-3 sm:flex-row sm:items-start">
+          <div className="sm:w-40">
+            <TextInput value={b.lead} placeholder="小标题（如 战略研究）" onChange={(v) => onChange(bullets.map((x, xi) => (xi === i ? { ...x, lead: v } : x)))} />
+          </div>
+          <div className="flex-1">
+            <AreaInput value={b.text} rows={2} onChange={(v) => onChange(bullets.map((x, xi) => (xi === i ? { ...x, text: v } : x)))} />
+          </div>
+          <button type="button" onClick={() => onChange(bullets.filter((_, xi) => xi !== i))} className="self-start rounded-md p-1.5 text-[#EFE9DC]/50 transition-colors hover:bg-red-400/10 hover:text-red-300" title="删除条目">
+            <Trash2 size={15} />
+          </button>
+        </div>
+      ))}
+      <Btn onClick={() => onChange([...bullets, { lead: '', text: '' }])}>
+        <Plus size={14} /> 加一条描述
+      </Btn>
+    </div>
+  );
+}
+
+function JourneyEditor({ group, onChange }: { group: JourneyGroup; onChange: (items: JourneyItem[]) => void }) {
+  const items = group.items;
+  return (
+    <div className="flex flex-col gap-4">
+      {items.map((item, i) => (
+        <CardShell
+          key={i}
+          title={`${item.org || '（未命名）'} · ${item.role || ''}`}
+          onUp={() => onChange(move(items, i, i - 1))}
+          onDown={() => onChange(move(items, i, i + 1))}
+          onDelete={() => onChange(items.filter((_, x) => x !== i))}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="时间（如 2026.3 — 至今）">
+                <TextInput value={item.period} onChange={(v) => onChange(items.map((x, xi) => (xi === i ? { ...x, period: v } : x)))} />
+              </Field>
+              <Field label="亮点徽章（可选，如 北京赛区一等奖）">
+                <TextInput value={item.highlight ?? ''} onChange={(v) => onChange(items.map((x, xi) => (xi === i ? { ...x, highlight: v || undefined } : x)))} />
+              </Field>
+            </div>
+            <Field label="学校 / 公司 / 赛事名称">
+              <TextInput value={item.org} onChange={(v) => onChange(items.map((x, xi) => (xi === i ? { ...x, org: v } : x)))} />
+            </Field>
+            <Field label="身份 / 职位（如 管理经济学硕士）">
+              <TextInput value={item.role} onChange={(v) => onChange(items.map((x, xi) => (xi === i ? { ...x, role: v } : x)))} />
+            </Field>
+            <BulletsEditor bullets={item.bullets} onChange={(b) => onChange(items.map((x, xi) => (xi === i ? { ...x, bullets: b } : x)))} />
+          </div>
+        </CardShell>
+      ))}
+      <Btn onClick={() => onChange([...items, { period: '', org: '', role: '', bullets: [{ lead: '', text: '' }] }])}>
+        <Plus size={14} /> 新增条目
+      </Btn>
+    </div>
+  );
+}
+
+/* ---------------- Program 编辑器 ---------------- */
+
+function ProgramsEditor({ programs, onChange }: { programs: Program[]; onChange: (p: Program[]) => void }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="rounded-xl border border-[#C9A24B]/20 bg-[#15110A] p-3 text-xs leading-relaxed text-[#EFE9DC]/55">
+        配图路径可填：<code className="text-[#E8CD8A]">art/bifrost.svg</code>、
+        <code className="text-[#E8CD8A]">art/shopfront.svg</code>、
+        <code className="text-[#E8CD8A]">art/inspireplanet.svg</code>
+        ，留空则显示占位图；也可以放任意图片网址。
+      </p>
+      {programs.map((p, i) => (
+        <CardShell
+          key={i}
+          title={`${String(i + 1).padStart(2, '0')} · ${p.name || '（未命名）'}`}
+          onUp={() => onChange(move(programs, i, i - 1))}
+          onDown={() => onChange(move(programs, i, i + 1))}
+          onDelete={() => onChange(programs.filter((_, x) => x !== i))}
+        >
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="项目名称">
+                <TextInput value={p.name} onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, name: v } : x)))} />
+              </Field>
+              <Field label="分类（中文，如 数据产品）">
+                <TextInput value={p.categoryCn} onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, categoryCn: v } : x)))} />
+              </Field>
+              <Field label="分类（英文，如 Data Product）">
+                <TextInput value={p.categoryEn} onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, categoryEn: v } : x)))} />
+              </Field>
+              <Field label="链接（可选，如线上 Demo）">
+                <TextInput value={p.url ?? ''} placeholder="https://…" onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, url: v || undefined } : x)))} />
+              </Field>
+            </div>
+            <Field label="简介">
+              <AreaInput value={p.desc} onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, desc: v } : x)))} />
+            </Field>
+            <Field label="配图路径">
+              <TextInput value={p.art ?? ''} placeholder="/art/bifrost.svg 或图片网址" onChange={(v) => onChange(programs.map((x, xi) => (xi === i ? { ...x, art: v || undefined } : x)))} />
+            </Field>
+          </div>
+        </CardShell>
+      ))}
+      <Btn onClick={() => onChange([...programs, { name: '', categoryEn: '', categoryCn: '', desc: '' }])}>
+        <Plus size={14} /> 新增作品
+      </Btn>
+    </div>
+  );
+}
+
+/* ---------------- 主应用 ---------------- */
+
+type TabKey = 'knowledge' | 'programs' | `j-${number}`;
+
+export default function AdminApp() {
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [tab, setTab] = useState<TabKey>('knowledge');
+  const [status, setStatus] = useState('加载中…');
+  const [fromLocal, setFromLocal] = useState(false);
+  const [gh, setGh] = useState<GhConfig>(() => loadGhConfig() ?? { owner: '', repo: '', branch: 'main', path: 'public/content.json', token: '' });
+  const [ghBusy, setGhBusy] = useState(false);
+  const [ghResult, setGhResult] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    (async () => {
+      const local = loadLocal();
+      if (local) {
+        setContent(local);
+        setFromLocal(true);
+        setStatus('已加载「本机预览」内容（尚未发布）');
+        return;
+      }
+      const pub = await fetchPublished();
+      if (pub) {
+        setContent(pub);
+        setStatus('已加载线上发布的内容');
+      } else {
+        setStatus('加载失败：找不到 content.json，请刷新重试');
+      }
+    })();
+  }, []);
+
+  if (!content) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-[#EFE9DC]/70">{status}</div>
+    );
+  }
+
+  const mutate = (fn: (c: SiteContent) => void) => {
+    const next = normalize(JSON.parse(JSON.stringify(content)));
+    fn(next);
+    setContent(next);
+    setStatus('有未保存的修改');
+  };
+
+  const doSave = () => {
+    saveLocal(content);
+    setFromLocal(true);
+    setStatus('已保存到本机：在这个浏览器里打开主页即可看到最新效果');
+  };
+
+  const doClearLocal = async () => {
+    clearLocal();
+    setFromLocal(false);
+    const pub = await fetchPublished();
+    setContent(pub);
+    setStatus('已清除本机修改，回到线上发布版本');
+  };
+
+  const doImport = async (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    try {
+      setContent(normalize(JSON.parse(await f.text())));
+      setStatus('导入成功，请检查内容后点击「保存到本机预览」');
+    } catch {
+      setStatus('导入失败：不是有效的 JSON 文件');
+    }
+    e.target.value = '';
+  };
+
+  const doPublish = async () => {
+    setGhBusy(true);
+    setGhResult('');
+    saveGhConfig(gh);
+    const res = await publishContent(gh, content);
+    setGhBusy(false);
+    setGhResult(
+      res.ok
+        ? '✅ 发布成功！已提交到 GitHub，线上网站将在 1-2 分钟内自动更新。'
+        : `❌ ${res.error}`
+    );
+  };
+
+  const doPullRepo = async () => {
+    const c = await fetchRepoContent(gh);
+    if (c) {
+      setContent(c);
+      setStatus('已拉取 GitHub 仓库里的最新内容（未保存）');
+    } else {
+      setGhResult('❌ 拉取失败：请检查仓库信息与 Token');
+    }
+  };
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'knowledge', label: '知识库' },
+    ...content.journey.map((g, i) => ({ key: `j-${i}` as TabKey, label: g.titleCn })),
+    { key: 'programs', label: 'Program 作品' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#0C0C0C] px-4 py-8 text-[#EFE9DC] sm:px-8">
+      <div className="mx-auto max-w-4xl">
+        {/* 顶栏 */}
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#C9A24B]/20 pb-6">
+          <div>
+            <h1 className="text-xl font-semibold tracking-wide">
+              Claire · 网站内容管理
+              <a href="./" target="_blank" rel="noreferrer" className="ml-3 inline-flex items-center gap-1 text-xs font-normal text-[#C9A24B] hover:underline">
+                打开主页 <ExternalLink size={12} />
+              </a>
+            </h1>
+            <p className={`mt-2 text-xs ${fromLocal ? 'text-[#E8CD8A]' : 'text-[#EFE9DC]/50'}`}>{status}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Btn onClick={doSave} tone="gold">
+              <Save size={14} /> 保存到本机预览
+            </Btn>
+            <Btn onClick={() => downloadContent(content)} tone="ghost">
+              <Download size={14} /> 导出 content.json
+            </Btn>
+            <Btn onClick={() => fileRef.current?.click()} tone="ghost">
+              <Upload size={14} /> 导入 JSON
+            </Btn>
+            {fromLocal && (
+              <Btn onClick={doClearLocal} tone="danger">
+                <RotateCcw size={14} /> 清除本机修改
+              </Btn>
+            )}
+            <input ref={fileRef} type="file" accept=".json,application/json" className="hidden" onChange={doImport} />
+          </div>
+        </header>
+
+        {/* 发布到网站（GitHub 互通） */}
+        <section className="mt-6 rounded-2xl border border-[#C9A24B]/25 bg-gradient-to-b from-[#15110A] to-[#0F0D09] p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold tracking-wider text-[#EFE9DC]">
+            <Github size={16} className="text-[#C9A24B]" /> 发布到网站（GitHub 互通）
+          </h2>
+          <p className="mt-2 text-xs leading-relaxed text-[#EFE9DC]/55">
+            填写一次仓库信息与 Token（只保存在你自己的浏览器里）。点「发布到网站」会把当前内容写入仓库里的
+            <code className="text-[#E8CD8A]"> {gh.path || 'public/content.json'} </code>
+            ，线上网站自动重新部署，1-2 分钟内所有访客可见。
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Field label="GitHub 用户名 / 组织">
+              <TextInput value={gh.owner} placeholder="如 xkkx33" onChange={(v) => setGh({ ...gh, owner: v.trim() })} />
+            </Field>
+            <Field label="仓库名">
+              <TextInput value={gh.repo} placeholder="如 claire-portfolio" onChange={(v) => setGh({ ...gh, repo: v.trim() })} />
+            </Field>
+            <Field label="分支（一般 main）">
+              <TextInput value={gh.branch} onChange={(v) => setGh({ ...gh, branch: v.trim() })} />
+            </Field>
+            <Field label="文件路径">
+              <TextInput value={gh.path} placeholder="public/content.json" onChange={(v) => setGh({ ...gh, path: v.trim() })} />
+            </Field>
+          </div>
+          <div className="mt-3">
+            <Field label="GitHub Token（需要该仓库 Contents 读写权限，仅存本机）">
+              <TextInput value={gh.token} placeholder="github_pat_… / ghp_…" onChange={(v) => setGh({ ...gh, token: v.trim() })} />
+            </Field>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Btn onClick={doPublish} tone="gold" disabled={ghBusy}>
+              <Eye size={14} /> {ghBusy ? '发布中…' : '发布到网站'}
+            </Btn>
+            <Btn onClick={doPullRepo} tone="ghost" disabled={ghBusy}>
+              拉取仓库最新内容
+            </Btn>
+            <Btn onClick={() => { saveGhConfig(gh); setGhResult('✅ 仓库配置已保存到本机'); }} tone="ghost">
+              保存仓库配置
+            </Btn>
+          </div>
+          {ghResult && <p className="mt-3 text-xs leading-relaxed text-[#E8CD8A]">{ghResult}</p>}
+          <details className="mt-4 text-xs leading-relaxed text-[#EFE9DC]/55">
+            <summary className="cursor-pointer text-[#C9A24B]">首次使用？查看一次性部署步骤 →</summary>
+            <ol className="mt-3 list-decimal space-y-2 pl-5">
+              <li>把本项目上传到 GitHub 仓库（可以把整个文件夹交给我帮你推送）。</li>
+              <li>在 Vercel 导入该仓库（或开启 GitHub Pages），得到对外网址；之后每次仓库更新都会自动重新部署。</li>
+              <li>GitHub → Settings → Developer settings → Fine-grained tokens：生成一个只授权该仓库「Contents: Read and write」的 Token。</li>
+              <li>回到本页填写并保存仓库信息与 Token。以后编辑完点「发布到网站」即可，无需再碰代码。</li>
+            </ol>
+          </details>
+        </section>
+
+        {/* 内容编辑 */}
+        <section className="mt-8">
+          <div className="flex flex-wrap gap-2 border-b border-[#C9A24B]/20 pb-4">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={`rounded-full border px-4 py-1.5 text-xs font-medium tracking-wider transition-colors ${
+                  tab === t.key
+                    ? 'border-[#C9A24B] bg-[#C9A24B] text-[#0C0C0C]'
+                    : 'border-[#C9A24B]/35 text-[#EFE9DC]/70 hover:border-[#C9A24B]'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5">
+            {tab === 'knowledge' && (
+              <KnowledgeEditor posts={content.knowledge} onChange={(p) => mutate((c) => { c.knowledge = p; })} />
+            )}
+            {tab === 'programs' && (
+              <ProgramsEditor programs={content.programs} onChange={(p) => mutate((c) => { c.programs = p; })} />
+            )}
+            {tab.startsWith('j-') && (() => {
+              const gi = Number(tab.slice(2));
+              const group: JourneyGroup | undefined = content.journey[gi];
+              if (!group) return null;
+              return (
+                <JourneyEditor
+                  group={group}
+                  onChange={(items) => mutate((c) => { c.journey[gi].items = items; })}
+                />
+              );
+            })()}
+          </div>
+        </section>
+
+        <footer className="mt-12 border-t border-[#C9A24B]/15 pt-6 text-center text-xs text-[#EFE9DC]/35">
+          内容保存在你的浏览器与 GitHub 仓库中 · 本页面不对访客展示（noindex）
+        </footer>
+      </div>
+    </div>
+  );
+}

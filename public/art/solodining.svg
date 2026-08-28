@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 750">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#171208"/>
+      <stop offset="1" stop-color="#0D0B07"/>
+    </linearGradient>
+    <radialGradient id="halo" cx=".5" cy=".42" r=".62">
+      <stop offset="0" stop-color="#C9A24B" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#C9A24B" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bars" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#C9A24B" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#C9A24B" stop-opacity=".55"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="750" fill="url(#bg)"/>
+  <circle cx="600" cy="340" r="310" fill="url(#halo)"/>
+  <g fill="url(#bars)">
+    <rect x="170" y="330" width="52" height="270" rx="10"/>
+    <rect x="248" y="260" width="52" height="340" rx="10"/>
+    <rect x="326" y="380" width="52" height="220" rx="10"/>
+    <rect x="822" y="300" width="52" height="300" rx="10"/>
+    <rect x="900" y="220" width="52" height="380" rx="10"/>
+    <rect x="978" y="360" width="52" height="240" rx="10"/>
+  </g>
+  <g>
+    <path d="M420 420h360a180 180 0 0 1-360 0Z" fill="#14100A" stroke="#C9A24B" stroke-width="4"/>
+    <path d="M470 620v-26h260v26a14 14 0 0 1-14 14H484a14 14 0 0 1-14-14Z" fill="#14100A" stroke="#C9A24B" stroke-width="4"/>
+    <path d="M412 398h376" stroke="#E8CD8A" stroke-width="5" stroke-linecap="round"/>
+    <g stroke="#C9A24B" stroke-width="6" stroke-linecap="round">
+      <path d="M520 300L640 172" fill="none"/>
+      <path d="M568 300L688 172" fill="none"/>
+    </g>
+    <g stroke="#E8CD8A" stroke-width="4" fill="none" stroke-linecap="round" stroke-opacity=".7">
+      <path d="M560 340c-12-18 12-30 0-48"/>
+      <path d="M606 340c-12-18 12-30 0-48"/>
+      <path d="M652 340c-12-18 12-30 0-48"/>
+    </g>
+  </g>
+  <g fill="none" stroke="#E8CD8A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M935 190c0-34 26-58 58-58s58 24 58 58c0 44-58 96-58 96s-58-52-58-96Z"/>
+    <circle cx="993" cy="188" r="20"/>
+  </g>
+  <g transform="translate(255 130)">
+    <circle cx="52" cy="52" r="50" fill="none" stroke="#C9A24B" stroke-width="3" stroke-opacity=".6"/>
+    <path d="M52 52V22M52 52l22 14" stroke="#E8CD8A" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <text x="600" y="722" text-anchor="middle" fill="#C9A24B" fill-opacity=".85" font-family="Georgia, 'Times New Roman', serif" font-size="25" letter-spacing="10">SOLO DINING · 500+ SURVEYS</text>
+</svg>
