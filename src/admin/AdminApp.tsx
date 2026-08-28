@@ -319,11 +319,145 @@ function ProgramsEditor({
   );
 }
 
+/* ---------------- 登录门 ---------------- */
+
+const PASS_KEY = 'claire-admin-pass-v1';
+const REMEMBER_KEY = 'claire-admin-remember-v1';
+const SESSION_KEY = 'claire-admin-unlocked-v1';
+
+interface AdminCredential {
+  user: string;
+  hash: string;
+}
+
+async function sha256(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function loadCredential(): AdminCredential | null {
+  try {
+    return JSON.parse(localStorage.getItem(PASS_KEY) ?? 'null') as AdminCredential | null;
+  } catch {
+    return null;
+  }
+}
+
+function Gate({ onUnlock }: { onUnlock: () => void }) {
+  const existing = loadCredential();
+  const [mode] = useState<'login' | 'setup'>(existing ? 'login' : 'setup');
+  const [user, setUser] = useState(existing?.user ?? '');
+  const [pass, setPass] = useState('');
+  const [pass2, setPass2] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const unlock = () => {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    if (remember) localStorage.setItem(REMEMBER_KEY, '1');
+    else localStorage.removeItem(REMEMBER_KEY);
+    onUnlock();
+  };
+
+  const submit = async () => {
+    setErr('');
+    setBusy(true);
+    try {
+      if (mode === 'setup') {
+        if (!user.trim() || pass.length < 4) {
+          setErr('请填写用户名，密码至少 4 位');
+          return;
+        }
+        if (pass !== pass2) {
+          setErr('两次输入的密码不一致');
+          return;
+        }
+        localStorage.setItem(PASS_KEY, JSON.stringify({ user: user.trim(), hash: await sha256(pass) }));
+        unlock();
+      } else {
+        const c = loadCredential();
+        if (!c || c.user !== user.trim() || c.hash !== (await sha256(pass))) {
+          setErr('用户名或密码不正确');
+          return;
+        }
+        unlock();
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#0C0C0C] px-4">
+      <div className="w-full max-w-sm rounded-3xl border border-[#C9A24B]/25 bg-gradient-to-b from-[#15110A] to-[#0F0D09] p-8">
+        <h1 className="text-center text-lg font-semibold tracking-wide text-[#EFE9DC]">
+          Claire · 内容管理
+        </h1>
+        <p className="mt-2 text-center text-xs text-[#EFE9DC]/50">
+          {mode === 'setup' ? '首次使用，设置管理员账号密码' : '请登录管理后台'}
+        </p>
+        <div className="mt-6 flex flex-col gap-4">
+          <Field label="用户名">
+            <TextInput value={user} onChange={setUser} placeholder="管理员用户名" />
+          </Field>
+          <Field label="密码">
+            <input
+              type="password"
+              className={inputCls}
+              value={pass}
+              onChange={(e) => setPass(e.target.value)}
+              placeholder={mode === 'setup' ? '至少 4 位' : '密码'}
+              onKeyDown={(e) => e.key === 'Enter' && submit()}
+            />
+          </Field>
+          {mode === 'setup' && (
+            <Field label="确认密码">
+              <input
+                type="password"
+                className={inputCls}
+                value={pass2}
+                onChange={(e) => setPass2(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submit()}
+              />
+            </Field>
+          )}
+          {mode === 'login' && (
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-[#EFE9DC]/60">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="accent-[#C9A24B]"
+              />
+              在这台电脑上记住登录
+            </label>
+          )}
+          {err && <p className="text-xs text-red-300/90">{err}</p>}
+          <Btn onClick={submit} tone="gold" disabled={busy}>
+            {busy ? '验证中…' : mode === 'setup' ? '创建并进入' : '登 录'}
+          </Btn>
+          {mode === 'setup' && (
+            <p className="text-center text-[11px] leading-relaxed text-[#EFE9DC]/40">
+              账号密码只保存在你自己的浏览器里，用于拦住陌生访客；忘记密码可清除浏览器本站数据后重新设置。
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- 主应用 ---------------- */
 
 type TabKey = 'knowledge' | 'programs' | `j-${number}`;
 
 export default function AdminApp() {
+  const [unlocked, setUnlocked] = useState(
+    () => sessionStorage.getItem(SESSION_KEY) === '1' || localStorage.getItem(REMEMBER_KEY) === '1'
+  );
   const [content, setContent] = useState<SiteContent | null>(null);
   const [tab, setTab] = useState<TabKey>('knowledge');
   const [status, setStatus] = useState('加载中…');
@@ -355,6 +489,10 @@ export default function AdminApp() {
       }
     })();
   }, []);
+
+  if (!unlocked) {
+    return <Gate onUnlock={() => setUnlocked(true)} />;
+  }
 
   if (!content) {
     return (
@@ -622,8 +760,19 @@ export default function AdminApp() {
           </div>
         </section>
 
-        <footer className="mt-12 border-t border-[#C9A24B]/15 pt-6 text-center text-xs text-[#EFE9DC]/35">
-          内容保存在你的浏览器与 GitHub 仓库中 · 本页面不对访客展示（noindex）
+        <footer className="mt-12 flex flex-col items-center gap-2 border-t border-[#C9A24B]/15 pt-6 text-center text-xs text-[#EFE9DC]/35">
+          <span>内容保存在你的浏览器与 GitHub 仓库中 · 本页面不对访客展示（noindex）</span>
+          <button
+            type="button"
+            onClick={() => {
+              sessionStorage.removeItem(SESSION_KEY);
+              localStorage.removeItem(REMEMBER_KEY);
+              setUnlocked(false);
+            }}
+            className="text-[#EFE9DC]/40 transition-colors hover:text-[#C9A24B]"
+          >
+            退出登录
+          </button>
         </footer>
       </div>
     </div>
