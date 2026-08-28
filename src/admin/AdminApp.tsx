@@ -319,6 +319,58 @@ function ProgramsEditor({
   );
 }
 
+function ChangePasswordPanel({ onDone, onClose }: { onDone: (msg: string) => void; onClose: () => void }) {
+  const [oldPass, setOldPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [newPass2, setNewPass2] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setErr('');
+    const c = loadCredential();
+    if (!c || c.hash !== (await sha256(oldPass))) {
+      setErr('旧密码不正确');
+      return;
+    }
+    if (newPass.length < 4) {
+      setErr('新密码至少 4 位');
+      return;
+    }
+    if (newPass !== newPass2) {
+      setErr('两次输入的新密码不一致');
+      return;
+    }
+    setBusy(true);
+    localStorage.setItem(PASS_KEY, JSON.stringify({ user: c.user, hash: await sha256(newPass) }));
+    setBusy(false);
+    onDone('✅ 密码已更新，下次登录使用新密码');
+  };
+
+  return (
+    <div className="mt-3 w-full max-w-sm rounded-2xl border border-[#C9A24B]/25 bg-[#0F0D09] p-5 text-left">
+      <Field label="旧密码">
+        <input type="password" className={inputCls} value={oldPass} onChange={(e) => setOldPass(e.target.value)} />
+      </Field>
+      <div className="mt-3 flex flex-col gap-3">
+        <Field label="新密码（至少 4 位）">
+          <input type="password" className={inputCls} value={newPass} onChange={(e) => setNewPass(e.target.value)} />
+        </Field>
+        <Field label="确认新密码">
+          <input type="password" className={inputCls} value={newPass2} onChange={(e) => setNewPass2(e.target.value)} />
+        </Field>
+      </div>
+      {err && <p className="mt-2 text-xs text-red-300/90">{err}</p>}
+      <div className="mt-4 flex items-center gap-2">
+        <Btn onClick={submit} tone="gold" disabled={busy}>
+          {busy ? '保存中…' : '保存新密码'}
+        </Btn>
+        <Btn onClick={onClose}>取消</Btn>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- 登录门 ---------------- */
 
 const PASS_KEY = 'claire-admin-pass-v1';
@@ -469,6 +521,7 @@ export default function AdminApp() {
   const [ghBusy, setGhBusy] = useState(false);
   const [ghTesting, setGhTesting] = useState(false);
   const [ghResult, setGhResult] = useState('');
+  const [showPassPanel, setShowPassPanel] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -760,19 +813,37 @@ export default function AdminApp() {
           </div>
         </section>
 
-        <footer className="mt-12 flex flex-col items-center gap-2 border-t border-[#C9A24B]/15 pt-6 text-center text-xs text-[#EFE9DC]/35">
+        <footer className="mt-12 flex flex-col items-center gap-3 border-t border-[#C9A24B]/15 pt-6 text-center text-xs text-[#EFE9DC]/35">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => setShowPassPanel((v) => !v)}
+              className="text-[#EFE9DC]/40 transition-colors hover:text-[#C9A24B]"
+            >
+              修改密码
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.removeItem(SESSION_KEY);
+                localStorage.removeItem(REMEMBER_KEY);
+                setUnlocked(false);
+              }}
+              className="text-[#EFE9DC]/40 transition-colors hover:text-[#C9A24B]"
+            >
+              退出登录
+            </button>
+          </div>
+          {showPassPanel && (
+            <ChangePasswordPanel
+              onDone={(msg) => {
+                setShowPassPanel(false);
+                setStatus(msg);
+              }}
+              onClose={() => setShowPassPanel(false)}
+            />
+          )}
           <span>内容保存在你的浏览器与 GitHub 仓库中 · 本页面不对访客展示（noindex）</span>
-          <button
-            type="button"
-            onClick={() => {
-              sessionStorage.removeItem(SESSION_KEY);
-              localStorage.removeItem(REMEMBER_KEY);
-              setUnlocked(false);
-            }}
-            className="text-[#EFE9DC]/40 transition-colors hover:text-[#C9A24B]"
-          >
-            退出登录
-          </button>
         </footer>
       </div>
     </div>
