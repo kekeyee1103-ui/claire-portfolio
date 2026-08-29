@@ -2,15 +2,15 @@ import { Blocks, Moon, Orbit, Shapes } from 'lucide-react';
 import FadeIn from './FadeIn';
 import AnimatedText from './AnimatedText';
 import ContactButton from './ContactButton';
-
-const ABOUT_TEXT =
-  '具备数据科学、经济统计与管理经济学的复合背景，兼具商业银行、AI 企业与市场研究的实战经验。擅长战略分析、行业研究、经济测算与产业链尽调，享受把复杂信息提炼为清晰决策的过程。期待与优秀的团队一起，用数据讲好商业故事，创造真实的改变。';
+import { UI, type Lang } from '../i18n';
 
 const CHIPS = ['战略分析', '行业研究', '数据建模', 'AI 工具应用', '商务谈判'];
 
 const DECOR_STYLES = { filter: 'drop-shadow(0 0 26px rgba(201,162,75,0.35))' };
 
-export default function AboutSection() {
+export default function AboutSection({ lang }: { lang: Lang }) {
+  const s = UI[lang];
+
   return (
     <section
       id="about"
@@ -57,12 +57,12 @@ export default function AboutSection() {
 
       <div className="z-10 flex flex-col items-center gap-10 sm:gap-14 md:gap-16">
         <FadeIn as="h2" y={40} className="hero-heading text-center font-black uppercase leading-none tracking-tight" style={{ fontSize: 'clamp(3rem, 12vw, 160px)' }}>
-          About me
+          {s.aboutHeading}
         </FadeIn>
 
         <div className="flex flex-col items-center gap-12 sm:gap-16 md:gap-20">
           <AnimatedText
-            text={ABOUT_TEXT}
+            text={s.aboutText}
             className="max-w-[560px] text-center font-medium leading-relaxed text-[#EFE9DC]"
             style={{ fontSize: 'clamp(1rem, 2vw, 1.35rem)' }}
           />
@@ -79,7 +79,7 @@ export default function AboutSection() {
           </div>
 
           <FadeIn y={20} delay={0.1}>
-            <ContactButton label="Contact Me" href="#subscribe" />
+            <ContactButton label={s.contact} href="#subscribe" />
           </FadeIn>
         </div>
       </div>

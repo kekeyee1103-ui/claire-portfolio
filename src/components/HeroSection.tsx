@@ -1,15 +1,17 @@
 import FadeIn from './FadeIn';
 import ContactButton from './ContactButton';
+import { UI, type Lang } from '../i18n';
 
-const NAV_LINKS = [
-  { label: 'About', href: '#about' },
-  { label: 'Education', href: '#journey' },
-  { label: 'Program', href: '#portfolio' },
-  { label: 'Knowledge', href: '#knowledge' },
-  { label: 'Subscribe', href: '#subscribe' },
-];
+export default function HeroSection({ lang, onToggleLang }: { lang: Lang; onToggleLang: () => void }) {
+  const s = UI[lang];
+  const links = [
+    { label: s.nav.about, href: '#about' },
+    { label: s.nav.education, href: '#journey' },
+    { label: s.nav.program, href: '#portfolio' },
+    { label: s.nav.knowledge, href: '#knowledge' },
+    { label: s.nav.subscribe, href: '#subscribe' },
+  ];
 
-export default function HeroSection() {
   return (
     <section
       className="relative flex h-screen flex-col overflow-x-clip px-6 pb-7 pt-6 sm:pb-8 md:px-10 md:pb-10 md:pt-8"
@@ -17,16 +19,24 @@ export default function HeroSection() {
     >
       {/* Navbar */}
       <FadeIn y={-20} delay={0}>
-        <nav className="flex items-center justify-between">
-          {NAV_LINKS.map((link) => (
+        <nav className="flex items-center justify-between gap-3">
+          {links.map((link) => (
             <a
-              key={link.label}
+              key={link.href}
               href={link.href}
               className="text-sm font-medium uppercase tracking-wider text-[#EFE9DC] transition-opacity duration-200 hover:opacity-70 md:text-lg lg:text-[1.4rem]"
             >
               {link.label}
             </a>
           ))}
+          <button
+            type="button"
+            onClick={onToggleLang}
+            title={lang === 'zh' ? 'Switch to English' : '切换为中文'}
+            className="shrink-0 rounded-full border border-[#C9A24B]/50 px-3 py-1 text-xs font-medium tracking-widest text-[#E8CD8A] transition-colors duration-200 hover:border-[#C9A24B] hover:bg-[#C9A24B]/10 md:px-4 md:py-1.5 md:text-sm"
+          >
+            {lang === 'zh' ? 'EN' : '中文'}
+          </button>
         </nav>
       </FadeIn>
 
@@ -45,13 +55,13 @@ export default function HeroSection() {
             style={{ fontSize: 'clamp(0.75rem, 1.4vw, 1.5rem)' }}
           >
             <span className="mb-2 block text-[0.7em] tracking-[0.3em] text-[#C9A24B]">
-              Data · Strategy · Growth
+              {s.heroTaglineLabel}
             </span>
-            以数据洞察商业，用战略驱动增长
+            {s.heroTagline}
           </p>
         </FadeIn>
         <FadeIn y={20} delay={0.5}>
-          <ContactButton label="Contact Me" href="#subscribe" />
+          <ContactButton label={s.contact} href="#subscribe" />
         </FadeIn>
       </div>
 
@@ -60,8 +70,8 @@ export default function HeroSection() {
         <FadeIn y={30} delay={0.6}>
           <a
             href="#about"
-            aria-label="点击照片，了解更多关于我"
-            title="点击进入 About"
+            aria-label={lang === 'zh' ? '点击照片，了解更多关于我' : 'Click the portrait to read more about me'}
+            title={lang === 'zh' ? '点击进入 About' : 'Go to About'}
             className="group relative block"
           >
             <div className="absolute -inset-8 rounded-[48px] bg-[#C9A24B]/10 opacity-80 blur-3xl transition-opacity duration-300 group-hover:opacity-100" />
@@ -69,7 +79,7 @@ export default function HeroSection() {
               src="portrait.jpg"
               alt="Claire 何珂一"
               draggable={false}
-              className="relative w-[280px] rounded-[32px] object-cover shadow-[0_24px_90px_rgba(0,0,0,0.65)] ring-1 ring-[#C9A24B]/45 transition-transform duration-300 group-hover:scale-[1.02] sm:w-[360px] md:w-[440px] lg:w-[520px]"
+              className="relative w-[220px] rounded-[28px] object-cover shadow-[0_24px_90px_rgba(0,0,0,0.65)] ring-1 ring-[#C9A24B]/45 transition-transform duration-300 group-hover:scale-[1.02] sm:w-[270px] md:w-[330px] lg:w-[390px]"
             />
           </a>
         </FadeIn>

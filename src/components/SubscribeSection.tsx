@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, Linkedin, Mail, MapPin, Phone } from 'lucide-react';
 import FadeIn from './FadeIn';
 import ContactButton from './ContactButton';
+import { UI, type Lang } from '../i18n';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -13,7 +14,8 @@ const CONTACTS = [
   { icon: MapPin, label: 'Location', value: '新加坡 · 北京', href: undefined },
 ];
 
-export default function SubscribeSection() {
+export default function SubscribeSection({ lang }: { lang: Lang }) {
+  const s = UI[lang];
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [subscribed, setSubscribed] = useState(false);
@@ -21,7 +23,7 @@ export default function SubscribeSection() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!EMAIL_RE.test(email.trim())) {
-      setError('请输入有效的邮箱地址');
+      setError(lang === 'zh' ? '请输入有效的邮箱地址' : 'Please enter a valid email address');
       return;
     }
     setError('');
@@ -39,13 +41,13 @@ export default function SubscribeSection() {
       <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center gap-10 text-center sm:gap-14">
         <FadeIn y={40}>
           <p className="mb-4 text-xs font-medium uppercase tracking-[0.4em] text-[#C9A24B] sm:text-sm">
-            Stay Tuned
+            {s.subscribeEyebrow}
           </p>
           <h2 className="hero-heading font-black uppercase leading-none tracking-tight" style={{ fontSize: 'clamp(3rem, 12vw, 160px)' }}>
-            Subscribe
+            {s.subscribeHeading}
           </h2>
           <p className="mt-6 font-light leading-relaxed text-[#EFE9DC]/65" style={{ fontSize: 'clamp(0.95rem, 1.6vw, 1.25rem)' }}>
-            订阅我的页面，第一时间获取新项目、新研究与动态更新。
+            {s.subscribeDesc}
           </p>
         </FadeIn>
 
@@ -67,9 +69,9 @@ export default function SubscribeSection() {
                 >
                   <CheckCircle2 size={64} strokeWidth={1.2} className="text-[#C9A24B]" />
                 </motion.div>
-                <p className="text-xl font-medium text-[#EFE9DC] sm:text-2xl">订阅成功，感谢关注！</p>
+                <p className="text-xl font-medium text-[#EFE9DC] sm:text-2xl">{s.subscribeSuccess}</p>
                 <p className="text-sm font-light text-[#EFE9DC]/55">
-                  最新动态将第一时间与你分享（当前为演示模式，未真实收集邮箱）。
+                  {s.subscribeSuccessNote}
                 </p>
               </motion.div>
             ) : (
@@ -91,7 +93,7 @@ export default function SubscribeSection() {
                   aria-label="订阅邮箱"
                   className="w-full flex-1 rounded-full border-2 border-[#C9A24B]/40 bg-transparent px-6 py-3.5 text-sm font-light text-[#EFE9DC] outline-none transition-colors duration-300 placeholder:text-[#EFE9DC]/30 focus:border-[#C9A24B] sm:text-base"
                 />
-                <ContactButton label="Subscribe" type="submit" />
+                <ContactButton label={s.subscribeBtn} type="submit" />
                 {error && (
                   <p className="text-xs font-light tracking-wide text-[#E08A5C] sm:absolute sm:mt-24">
                     {error}

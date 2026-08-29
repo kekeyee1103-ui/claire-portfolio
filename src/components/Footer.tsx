@@ -1,4 +1,7 @@
-export default function Footer() {
+import { UI, type Lang } from '../i18n';
+
+export default function Footer({ lang }: { lang: Lang }) {
+  const s = UI[lang];
   return (
     <footer className="border-t border-[#C9A24B]/15 bg-[#0C0C0C] px-6 py-10 md:px-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-center md:flex-row md:text-left">
@@ -12,13 +15,13 @@ export default function Footer() {
           </a>
         </p>
         <p className="text-xs font-light uppercase tracking-[0.25em] text-[#C9A24B]/60">
-          Data · Strategy · Growth
+          {s.footerTagline}
         </p>
         <a
           href="#about"
           className="text-xs font-medium uppercase tracking-[0.25em] text-[#EFE9DC]/60 transition-colors duration-200 hover:text-[#C9A24B]"
         >
-          Back to Top ↑
+          {s.backToTop}
         </a>
       </div>
     </footer>

@@ -1,8 +1,9 @@
 import { ArrowRight, NotebookPen } from 'lucide-react';
 import FadeIn from './FadeIn';
 import type { KnowledgePost } from '../content/types';
+import { UI, type Lang } from '../i18n';
 
-function PostCard({ post, index }: { post: KnowledgePost; index: number }) {
+function PostCard({ post, index, readMore }: { post: KnowledgePost; index: number; readMore: string }) {
   const inner = (
     <>
       <div className="flex items-center justify-between gap-4">
@@ -18,7 +19,7 @@ function PostCard({ post, index }: { post: KnowledgePost; index: number }) {
         {post.excerpt}
       </p>
       <span className="mt-6 inline-flex items-center gap-2 text-xs font-medium uppercase tracking-[0.25em] text-[#C9A24B]">
-        Read More
+        {readMore}
         <ArrowRight size={14} className="transition-transform duration-300 group-hover:translate-x-1" />
       </span>
     </>
@@ -40,7 +41,9 @@ function PostCard({ post, index }: { post: KnowledgePost; index: number }) {
   );
 }
 
-export default function KnowledgeSection({ posts }: { posts: KnowledgePost[] }) {
+export default function KnowledgeSection({ lang, posts }: { lang: Lang; posts: KnowledgePost[] }) {
+  const s = UI[lang];
+
   return (
     <section
       id="knowledge"
@@ -51,13 +54,13 @@ export default function KnowledgeSection({ posts }: { posts: KnowledgePost[] }) 
 
       <FadeIn y={40}>
         <p className="mb-4 text-center text-xs font-medium uppercase tracking-[0.4em] text-[#C9A24B] sm:text-sm">
-          Thinking & Notes
+          {s.knowledgeEyebrow}
         </p>
         <h2 className="hero-heading text-center font-black uppercase leading-none tracking-tight" style={{ fontSize: 'clamp(3rem, 12vw, 160px)' }}>
-          Knowledge
+          {s.knowledgeHeading}
         </h2>
         <p className="mt-6 text-center font-light leading-relaxed text-[#EFE9DC]/65" style={{ fontSize: 'clamp(0.95rem, 1.6vw, 1.25rem)' }}>
-          知识库 —— 记录我的新想法、研究笔记与行业观察，持续更新。
+          {s.knowledgeSub}
         </p>
       </FadeIn>
 
@@ -66,25 +69,19 @@ export default function KnowledgeSection({ posts }: { posts: KnowledgePost[] }) 
           <FadeIn>
             <div className="flex min-h-[260px] flex-col items-center justify-center gap-5 rounded-[28px] border border-dashed border-[#C9A24B]/35 text-center">
               <NotebookPen size={34} strokeWidth={1.1} className="text-[#C9A24B]/80" />
-              <p className="text-base font-medium tracking-[0.2em] text-[#EFE9DC]/75">内容待更新</p>
-              <p className="text-sm font-light leading-relaxed text-[#EFE9DC]/45">
-                新想法正在整理中 · Stay Tuned
-              </p>
+              <p className="text-base font-medium tracking-[0.2em] text-[#EFE9DC]/75">{s.knowledgeEmpty}</p>
+              <p className="text-sm font-light leading-relaxed text-[#EFE9DC]/45">{s.knowledgeEmptySub}</p>
             </div>
           </FadeIn>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post, i) => (
-              <PostCard key={`${post.title}-${i}`} post={post} index={i} />
+              <PostCard key={`${post.title}-${i}`} post={post} index={i} readMore={s.readMore} />
             ))}
             <FadeIn delay={posts.length * 0.1} className="h-full">
               <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-[#C9A24B]/35 p-8 text-center">
                 <NotebookPen size={30} strokeWidth={1.2} className="text-[#C9A24B]/80" />
-                <p className="text-sm font-light leading-relaxed text-[#EFE9DC]/55">
-                  下一篇想法正在路上
-                  <br />
-                  Stay Tuned
-                </p>
+                <p className="text-sm font-light leading-relaxed text-[#EFE9DC]/55">{s.knowledgeMore}</p>
               </div>
             </FadeIn>
           </div>

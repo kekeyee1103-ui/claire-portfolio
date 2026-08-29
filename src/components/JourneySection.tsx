@@ -1,6 +1,7 @@
 import { Briefcase, Download, GraduationCap, Trophy, type LucideIcon } from 'lucide-react';
 import FadeIn from './FadeIn';
 import type { JourneyGroup, JourneyIconKey } from '../content/types';
+import { UI, type Lang } from '../i18n';
 
 const ICONS: Record<JourneyIconKey, LucideIcon> = {
   edu: GraduationCap,
@@ -8,7 +9,8 @@ const ICONS: Record<JourneyIconKey, LucideIcon> = {
   briefcase: Briefcase,
 };
 
-export default function JourneySection({ groups }: { groups: JourneyGroup[] }) {
+export default function JourneySection({ lang, groups }: { lang: Lang; groups: JourneyGroup[] }) {
+  const s = UI[lang];
   if (groups.length === 0) return null;
 
   return (
@@ -21,10 +23,10 @@ export default function JourneySection({ groups }: { groups: JourneyGroup[] }) {
 
       <FadeIn y={40}>
         <p className="mb-4 text-center text-xs font-medium uppercase tracking-[0.4em] text-[#C9A24B] sm:text-sm">
-          Resume · 个人简历
+          {s.journeyEyebrow}
         </p>
         <h2 className="hero-heading mb-8 text-center font-black uppercase leading-none tracking-tight sm:mb-10" style={{ fontSize: 'clamp(3rem, 12vw, 160px)' }}>
-          Education
+          {s.journeyHeading}
         </h2>
         <div className="mb-16 flex justify-center sm:mb-20 md:mb-28">
           <a
@@ -33,7 +35,7 @@ export default function JourneySection({ groups }: { groups: JourneyGroup[] }) {
             className="inline-flex items-center gap-2.5 rounded-full border-2 border-[#C9A24B]/70 px-8 py-3 text-xs font-medium uppercase tracking-widest text-[#EFE9DC] transition-colors duration-300 hover:bg-[#C9A24B]/10 sm:px-10 sm:py-3.5 sm:text-sm"
           >
             <Download size={16} />
-            下载简历 PDF · Resume
+            {s.downloadResume}
           </a>
         </div>
       </FadeIn>
@@ -41,12 +43,13 @@ export default function JourneySection({ groups }: { groups: JourneyGroup[] }) {
       <div className="mx-auto max-w-5xl">
         {groups.map((group, gi) => {
           const Icon = ICONS[group.iconKey] ?? GraduationCap;
+          const groupTitle = lang === 'en' ? (s.groupTitles[group.iconKey] ?? group.titleCn) : group.titleCn;
           return (
             <div key={group.titleCn} className={gi > 0 ? 'mt-20 sm:mt-28' : ''}>
               <FadeIn className="mb-4 flex items-center gap-4">
                 <Icon size={26} strokeWidth={1.2} className="text-[#C9A24B]" />
                 <h3 className="text-xl font-black tracking-[0.15em] text-[#EFE9DC] sm:text-2xl">
-                  {group.titleCn}
+                  {groupTitle}
                 </h3>
                 <span
                   className="ml-2 hidden h-px flex-1 sm:block"

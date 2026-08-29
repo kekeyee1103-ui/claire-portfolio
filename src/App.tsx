@@ -12,10 +12,18 @@ import SubscribeSection from './components/SubscribeSection';
 import Footer from './components/Footer';
 import { fetchPublished, loadLocal } from './content/store';
 import type { SiteContent } from './content/types';
+import type { Lang } from './i18n';
 
 export default function App() {
   const [entered, setEntered] = useState(false);
+  const [lang, setLang] = useState<Lang>(() =>
+    localStorage.getItem('claire-lang') === 'en' ? 'en' : 'zh'
+  );
   const [content, setContent] = useState<SiteContent | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('claire-lang', lang);
+  }, [lang]);
 
   useEffect(() => {
     const local = loadLocal();
@@ -34,15 +42,15 @@ export default function App() {
 
       {content && entered && (
         <main>
-          <HeroSection />
+          <HeroSection lang={lang} onToggleLang={() => setLang(lang === 'zh' ? 'en' : 'zh')} />
           <MarqueeSection />
-          <AboutSection />
-          <SkillsSection />
-          <JourneySection groups={content.journey} />
-          <ProjectsSection programs={content.programs} />
-          <KnowledgeSection posts={content.knowledge} />
-          <SubscribeSection />
-          <Footer />
+          <AboutSection lang={lang} />
+          <SkillsSection lang={lang} />
+          <JourneySection lang={lang} groups={content.journey} />
+          <ProjectsSection lang={lang} programs={content.programs} />
+          <KnowledgeSection lang={lang} posts={content.knowledge} />
+          <SubscribeSection lang={lang} />
+          <Footer lang={lang} />
         </main>
       )}
     </div>

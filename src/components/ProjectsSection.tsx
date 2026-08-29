@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react';
 import FadeIn from './FadeIn';
 import GhostButton from './GhostButton';
 import type { Program } from '../content/types';
+import { UI, type Lang } from '../i18n';
 
 function ArtPlaceholder({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
@@ -23,11 +24,15 @@ function StackCard({
   index,
   total,
   progress,
+  visitLabel,
+  showEnCategory,
 }: {
   program: Program;
   index: number;
   total: number;
   progress: MotionValue<number>;
+  visitLabel: string;
+  showEnCategory: boolean;
 }) {
   const targetScale = 1 - (total - 1 - index) * 0.03;
   const scale = useTransform(progress, [index / total, 1], [1, targetScale]);
@@ -45,13 +50,13 @@ function StackCard({
           </span>
           <div className="min-w-0 flex-1">
             <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.3em] text-[#C9A24B] sm:text-xs">
-              {program.categoryEn} · {program.categoryCn}
+              {showEnCategory ? program.categoryEn : program.categoryCn}
             </p>
             <h3 className="truncate text-xl font-medium uppercase text-[#EFE9DC] sm:text-2xl md:text-3xl">
               {program.name}
             </h3>
           </div>
-          {program.url && <GhostButton label="Visit Site" href={program.url} />}
+          {program.url && <GhostButton label={visitLabel} href={program.url} />}
         </div>
 
         <p className="mb-6 max-w-3xl px-2 font-light leading-relaxed text-[#EFE9DC]/60 md:px-4" style={{ fontSize: 'clamp(0.85rem, 1.4vw, 1.1rem)' }}>
@@ -80,7 +85,8 @@ function StackCard({
   );
 }
 
-export default function ProjectsSection({ programs }: { programs: Program[] }) {
+export default function ProjectsSection({ lang, programs }: { lang: Lang; programs: Program[] }) {
+  const s = UI[lang];
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -95,10 +101,10 @@ export default function ProjectsSection({ programs }: { programs: Program[] }) {
     >
       <FadeIn y={40}>
         <p className="mb-4 text-center text-xs font-medium uppercase tracking-[0.4em] text-[#C9A24B] sm:text-sm">
-          Selected Works
+          {s.programEyebrow}
         </p>
         <h2 className="hero-heading mb-16 text-center font-black uppercase leading-none tracking-tight sm:mb-20 md:mb-28" style={{ fontSize: 'clamp(3rem, 12vw, 160px)' }}>
-          Program
+          {s.programHeading}
         </h2>
       </FadeIn>
 
@@ -106,7 +112,7 @@ export default function ProjectsSection({ programs }: { programs: Program[] }) {
         {programs.length === 0 ? (
           <FadeIn>
             <div className="flex min-h-[240px] items-center justify-center rounded-[40px] border border-dashed border-[#C9A24B]/35">
-              <p className="text-sm font-light tracking-widest text-[#EFE9DC]/50">内容待更新</p>
+              <p className="text-sm font-light tracking-widest text-[#EFE9DC]/50">{s.programEmpty}</p>
             </div>
           </FadeIn>
         ) : (
@@ -117,6 +123,8 @@ export default function ProjectsSection({ programs }: { programs: Program[] }) {
                 index={i}
                 total={programs.length}
                 progress={scrollYProgress}
+                visitLabel={s.visitSite}
+                showEnCategory={lang === 'en'}
               />
             </div>
           ))
