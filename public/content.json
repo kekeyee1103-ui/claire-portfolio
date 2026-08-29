@@ -169,7 +169,7 @@
     {
       "name": "ShopFrontSG",
       "categoryEn": "Product Strategy",
-      "categoryCn": "产品战略",
+      "categoryCn": "AI产品战略",
       "desc": "AI 驱动的一站式商户管理平台：围绕新加坡数字弱势群体数字化转型，主导市场研究与商业模式分析，推动 GTM 落地，晋级全国总决赛 Top 10。",
       "url": "https://shopfront-sg-mvp.vercel.app/",
       "art": "art/shopfront.svg"
@@ -185,7 +185,7 @@
     {
       "name": "Bifrost",
       "categoryEn": "Data Product",
-      "categoryCn": "数据产品",
+      "categoryCn": "AI数据产品",
       "desc": "制造业实时专属数据看板与决策闭环平台——让风险更早被看见，连接风险、信息与决策。",
       "url": "https://xkkx33.github.io/bifrost-site/",
       "art": "art/bifrost.svg"
@@ -193,7 +193,7 @@
     {
       "name": "心愿瓶",
       "categoryEn": "产品设计-娱乐休闲",
-      "categoryCn": "AI产品",
+      "categoryCn": "AI娱乐产品",
       "desc": "心愿瓶 - 🍯 心愿瓶 · 把心愿揉成彩虹，让生活开出惊喜\n\n心愿瓶是一个治愈系的“许愿与行动”小工具。它像一只摆在桌角的蓝白玻璃瓶，透明、透亮，承载着你每一个闪念——无论是“今天想去看一场电影”，还是“读5分钟书”。",
       "url": "https://eazo-html-wish-jar-static-57268074.eazo.dev",
       "art": "art/program-1787976279999.png"
