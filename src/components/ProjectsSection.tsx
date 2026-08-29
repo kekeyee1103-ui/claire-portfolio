@@ -1,97 +1,82 @@
-import { useRef } from 'react';
-import { motion, useScroll, useTransform, type MotionValue } from 'framer-motion';
-import { Layers } from 'lucide-react';
+import { ArrowUpRight, Layers } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import FadeIn from './FadeIn';
-import GhostButton from './GhostButton';
 import type { Program } from '../content/types';
 import { UI, type Lang } from '../i18n';
 
 function ArtPlaceholder({ className, style }: { className?: string; style?: CSSProperties }) {
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-4 border border-[#C9A24B]/25 bg-gradient-to-br from-[#161209] to-[#241B0C] ${className ?? ''}`}
+      className={`flex flex-col items-center justify-center gap-3 border-b border-[#C9A24B]/20 bg-gradient-to-br from-[#161209] to-[#241B0C] ${className ?? ''}`}
       style={style}
     >
-      <Layers size={44} strokeWidth={1} className="text-[#C9A24B]/70" />
-      <span className="text-xs uppercase tracking-[0.3em] text-[#EFE9DC]/40">Artwork</span>
+      <Layers size={32} strokeWidth={1} className="text-[#C9A24B]/70" />
+      <span className="text-[10px] uppercase tracking-[0.3em] text-[#EFE9DC]/40">Artwork</span>
     </div>
   );
 }
 
-function StackCard({
+function ProgramCard({
   program,
   index,
-  total,
-  progress,
-  visitLabel,
-  showEnCategory,
+  lang,
 }: {
   program: Program;
   index: number;
-  total: number;
-  progress: MotionValue<number>;
-  visitLabel: string;
-  showEnCategory: boolean;
+  lang: Lang;
 }) {
-  const targetScale = 1 - (total - 1 - index) * 0.03;
-  const scale = useTransform(progress, [index / total, 1], [1, targetScale]);
+  const s = UI[lang];
   const number = String(index + 1).padStart(2, '0');
 
   return (
-    <div className="sticky" style={{ top: `calc(clamp(6rem, 10vw, 8rem) + ${index * 28}px)` }}>
-      <motion.article
-        style={{ scale }}
-        className="mb-6 rounded-[40px] border-2 border-[#C9A24B]/55 bg-[#0C0C0C] p-4 sm:rounded-[50px] sm:p-6 md:rounded-[60px] md:p-8"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4 px-2 pb-6 pt-2 md:px-4">
-          <span className="hero-heading shrink-0 font-black leading-none" style={{ fontSize: 'clamp(3rem, 10vw, 140px)' }}>
-            {number}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="mb-1 text-[10px] font-medium uppercase tracking-[0.3em] text-[#C9A24B] sm:text-xs">
-              {showEnCategory ? program.categoryEn : program.categoryCn}
-            </p>
-            <h3 className="truncate text-xl font-medium uppercase text-[#EFE9DC] sm:text-2xl md:text-3xl">
-              {program.name}
-            </h3>
-          </div>
-          {program.url && <GhostButton label={visitLabel} href={program.url} />}
-        </div>
-
-        <p className="mb-6 max-w-3xl px-2 font-light leading-relaxed text-[#EFE9DC]/60 md:px-4" style={{ fontSize: 'clamp(0.85rem, 1.4vw, 1.1rem)' }}>
-          {program.desc}
-        </p>
-
-        <div className="px-2 pb-2 md:px-4">
+    <FadeIn delay={index * 0.08} className="h-full">
+      <article className="group flex h-full flex-col overflow-hidden rounded-[20px] border border-[#C9A24B]/25 bg-gradient-to-b from-[#15110A] to-[#0F0D09] transition-all duration-300 hover:-translate-y-1 hover:border-[#C9A24B]/60">
+        <div className="relative">
           {program.art ? (
             <img
               src={program.art}
               alt={`${program.name} 项目配图`}
               loading="lazy"
               draggable={false}
-              className="w-full rounded-[28px] border border-[#C9A24B]/25 object-cover sm:rounded-[36px] md:rounded-[44px]"
-              style={{ height: 'clamp(260px, 36vw, 480px)' }}
+              className="h-40 w-full border-b border-[#C9A24B]/20 object-cover sm:h-44"
             />
           ) : (
-            <ArtPlaceholder
-              className="w-full rounded-[28px] sm:rounded-[36px] md:rounded-[44px]"
-              style={{ height: 'clamp(260px, 36vw, 480px)' }}
-            />
+            <ArtPlaceholder className="h-40 w-full sm:h-44" />
+          )}
+          <span className="absolute left-4 top-4 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold tracking-[0.2em] text-[#E8CD8A] backdrop-blur-sm">
+            {number}
+          </span>
+        </div>
+
+        <div className="flex flex-1 flex-col p-5">
+          <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-[#C9A24B] sm:text-[11px]">
+            {lang === 'en' ? program.categoryEn : program.categoryCn}
+          </p>
+          <h3 className="mt-1.5 truncate text-lg font-medium uppercase text-[#EFE9DC] sm:text-xl">
+            {program.name}
+          </h3>
+          <p className="mt-2.5 line-clamp-3 flex-1 text-[13px] font-light leading-relaxed text-[#EFE9DC]/55">
+            {program.desc}
+          </p>
+          {program.url && (
+            <a
+              href={program.url}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center gap-1.5 self-start text-xs font-medium uppercase tracking-[0.25em] text-[#C9A24B] transition-colors duration-200 hover:text-[#E8CD8A]"
+            >
+              {s.visitSite}
+              <ArrowUpRight size={14} className="transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </a>
           )}
         </div>
-      </motion.article>
-    </div>
+      </article>
+    </FadeIn>
   );
 }
 
 export default function ProjectsSection({ lang, programs }: { lang: Lang; programs: Program[] }) {
   const s = UI[lang];
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end end'],
-  });
 
   return (
     <section
@@ -108,7 +93,7 @@ export default function ProjectsSection({ lang, programs }: { lang: Lang; progra
         </h2>
       </FadeIn>
 
-      <div ref={containerRef} className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-6xl">
         {programs.length === 0 ? (
           <FadeIn>
             <div className="flex min-h-[240px] items-center justify-center rounded-[40px] border border-dashed border-[#C9A24B]/35">
@@ -116,18 +101,11 @@ export default function ProjectsSection({ lang, programs }: { lang: Lang; progra
             </div>
           </FadeIn>
         ) : (
-          programs.map((program, i) => (
-            <div key={`${program.name}-${i}`} className="h-[85vh]">
-              <StackCard
-                program={program}
-                index={i}
-                total={programs.length}
-                progress={scrollYProgress}
-                visitLabel={s.visitSite}
-                showEnCategory={lang === 'en'}
-              />
-            </div>
-          ))
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {programs.map((program, i) => (
+              <ProgramCard key={`${program.name}-${i}`} program={program} index={i} lang={lang} />
+            ))}
+          </div>
         )}
       </div>
     </section>
