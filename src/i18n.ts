@@ -1,6 +1,55 @@
 export type Lang = 'zh' | 'en';
 
-export const UI = {
+export interface SkillItem {
+  name: string;
+  desc: string;
+  subTags?: string[];
+}
+
+export interface UIStrings {
+  nav: {
+    about: string;
+    education: string;
+    program: string;
+    knowledge: string;
+    subscribe: string;
+  };
+  heroTaglineLabel: string;
+  heroTagline: string;
+  contact: string;
+  aboutHeading: string;
+  aboutText: string;
+  skillsEyebrow: string;
+  skillsHeading: string;
+  skills: SkillItem[];
+  journeyEyebrow: string;
+  journeyHeading: string;
+  groupTitles: Record<string, string>;
+  downloadResume: string;
+  programEyebrow: string;
+  programHeading: string;
+  visitSite: string;
+  programEmpty: string;
+  knowledgeEyebrow: string;
+  knowledgeHeading: string;
+  knowledgeSub: string;
+  filterAll: string;
+  readMore: string;
+  close: string;
+  knowledgeEmpty: string;
+  knowledgeEmptySub: string;
+  knowledgeMore: string;
+  subscribeEyebrow: string;
+  subscribeHeading: string;
+  subscribeDesc: string;
+  subscribeBtn: string;
+  subscribeSuccess: string;
+  subscribeSuccessNote: string;
+  footerTagline: string;
+  backToTop: string;
+}
+
+export const UI: Record<Lang, UIStrings> = {
   zh: {
     nav: {
       about: '关于',
@@ -21,7 +70,11 @@ export const UI = {
       { name: '战略与行业分析', desc: '运用 S-Curve、PESTEL、红蓝海（ERRC）等框架开展行业研判与商业模式分析，输出可落地的战略建议。' },
       { name: '市场与用户研究', desc: '主导问卷设计、深度访谈与圆桌策划，将定性洞察转化为定量需求文档与增长策略。' },
       { name: '数据建模与分析', desc: '熟练使用 Python、SQL、SPSS 与机器学习方法，完成数据清洗、假设检验与商业预测建模。' },
-      { name: 'AI 工具应用', desc: '深度使用 Claude Code、Codex 等 AI 工具，高效完成尽调建库、MVP 方案与商业计划书产出。' },
+      {
+        name: 'AI Native',
+        subTags: ['AI 产品', 'AI 提效'],
+        desc: '深度使用 Claude Code、Codex 等 AI 工具，高效完成尽调建库、MVP 方案与商业计划书产出。',
+      },
       { name: '商务沟通与谈判', desc: '具备国际化沟通与商务推进能力，英语可作为工作语言（IELTS 6.5），擅长跨文化协作与价格谈判。' },
     ],
     journeyEyebrow: '个人简历',
@@ -30,7 +83,7 @@ export const UI = {
       edu: '教育经历',
       trophy: '项目与竞赛',
       briefcase: '实习经历',
-    } as Record<string, string>,
+    },
     downloadResume: '下载简历 PDF',
     programEyebrow: '精选项目',
     programHeading: '项目展示',
@@ -39,7 +92,9 @@ export const UI = {
     knowledgeEyebrow: '想法与笔记',
     knowledgeHeading: '知识库',
     knowledgeSub: '知识库 —— 记录我的新想法、研究笔记与行业观察，持续更新。',
-    readMore: '阅读全文',
+    filterAll: '全部',
+    readMore: '查看全文',
+    close: '关闭',
     knowledgeEmpty: '内容待更新',
     knowledgeEmptySub: '新想法正在整理中',
     knowledgeMore: '下一篇想法正在路上',
@@ -72,7 +127,11 @@ export const UI = {
       { name: 'Strategy & Industry Analysis', desc: 'Applying S-Curve, PESTEL and Blue-Ocean (ERRC) frameworks to industry assessment and business-model analysis that turns into actionable strategy.' },
       { name: 'Market & User Research', desc: 'Leading survey design, in-depth interviews and roundtables — turning qualitative insight into quantitative requirement documents and growth strategies.' },
       { name: 'Data Modeling & Analytics', desc: 'Proficient with Python, SQL, SPSS and machine learning for data cleaning, hypothesis testing and business forecasting.' },
-      { name: 'AI-Augmented Workflow', desc: 'Deep hands-on use of Claude Code, Codex and other AI tools for due-diligence databases, MVP plans and business plans.' },
+      {
+        name: 'AI Native',
+        subTags: ['AI Product', 'AI Efficiency'],
+        desc: 'Deep hands-on use of Claude Code, Codex and other AI tools for due-diligence databases, MVP plans and business plans.',
+      },
       { name: 'Business Communication', desc: 'International communication and business development; English as a working language (IELTS 6.5); skilled in cross-cultural collaboration and negotiation.' },
     ],
     journeyEyebrow: 'Resume',
@@ -81,7 +140,7 @@ export const UI = {
       edu: 'Education',
       trophy: 'Projects & Competitions',
       briefcase: 'Internships',
-    } as Record<string, string>,
+    },
     downloadResume: 'Download Resume (PDF)',
     programEyebrow: 'Selected Works',
     programHeading: 'Program',
@@ -90,7 +149,9 @@ export const UI = {
     knowledgeEyebrow: 'Notes & Ideas',
     knowledgeHeading: 'Knowledge',
     knowledgeSub: 'A knowledge base of my thoughts, research notes and industry observations — updated regularly.',
+    filterAll: 'All',
     readMore: 'Read More',
+    close: 'Close',
     knowledgeEmpty: 'Coming Soon',
     knowledgeEmptySub: 'New ideas are on the way',
     knowledgeMore: 'The next idea is on its way',
@@ -103,6 +164,4 @@ export const UI = {
     footerTagline: 'Data · Strategy · Growth',
     backToTop: 'Back to Top ↑',
   },
-} as const;
-
-export type UIStrings = (typeof UI)['zh'];
+};

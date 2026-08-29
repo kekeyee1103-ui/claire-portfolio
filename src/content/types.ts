@@ -33,6 +33,7 @@ export interface KnowledgePost {
   tag: string;
   title: string;
   excerpt: string;
+  content?: string;
   link?: string;
 }
 

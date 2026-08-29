@@ -46,6 +46,18 @@ export default function SkillsSection({ lang }: { lang: Lang }) {
               <h3 className="font-medium uppercase text-[#0C0C0C]" style={{ fontSize: 'clamp(1rem, 2.2vw, 2.1rem)' }}>
                 {skill.name}
               </h3>
+              {skill.subTags && (
+                <div className="flex flex-wrap gap-2">
+                  {skill.subTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-[#8C6F24]/40 bg-white/70 px-3.5 py-1 text-xs font-medium tracking-wider text-[#8C6F24]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
               <p className="max-w-2xl font-light leading-relaxed text-[#0C0C0C]/60" style={{ fontSize: 'clamp(0.85rem, 1.6vw, 1.25rem)' }}>
                 {skill.desc}
               </p>

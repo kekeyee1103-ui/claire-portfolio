@@ -43,6 +43,7 @@ export function normalize(raw: unknown): SiteContent {
     tag: str(k?.tag),
     title: str(k?.title),
     excerpt: str(k?.excerpt),
+    content: k?.content ? str(k.content) : undefined,
     link: k?.link ? str(k.link) : undefined,
   }));
 

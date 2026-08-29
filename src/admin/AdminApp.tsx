@@ -153,8 +153,11 @@ function KnowledgeEditor({ posts, onChange }: { posts: KnowledgePost[]; onChange
             <Field label="标题">
               <TextInput value={post.title} onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, title: v } : p)))} />
             </Field>
-            <Field label="摘要">
+            <Field label="摘要（卡片上显示的一两句话）">
               <AreaInput value={post.excerpt} onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, excerpt: v } : p)))} />
+            </Field>
+            <Field label="正文（点击卡片后展示的完整内容，支持空行分段）">
+              <AreaInput value={post.content ?? ''} rows={6} onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, content: v || undefined } : p)))} />
             </Field>
             <Field label="全文链接（可选，填了会显示「Read More」）">
               <TextInput value={post.link ?? ''} placeholder="https://…" onChange={(v) => onChange(posts.map((p, x) => (x === i ? { ...p, link: v || undefined } : p)))} />
