@@ -3,8 +3,8 @@ import { UI, type Lang } from '../i18n';
 
 const CHIPS = [
   'Python',
-  'Business Negotiation',
-  'Product Design',
+  'SQL',
+  'SPSS',
   '机器学习',
   '数据分析',
   '行业研究',
